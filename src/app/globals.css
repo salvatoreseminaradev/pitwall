@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-neutral-200 antialiased;
+  }
+
+  /* Consistent select styling across the dark theme */
+  select {
+    color-scheme: dark;
+  }
+}
+
+@layer utilities {
+  .container-page {
+    @apply mx-auto max-w-6xl px-4 sm:px-6;
+  }
+}
