@@ -7,6 +7,7 @@ import { resolveSeason } from "@/lib/seasons";
 import { getProfile, FREE_DRIVER_LIMIT } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export const metadata: Metadata = {
   title: "Drivers — PitWall",

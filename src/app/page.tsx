@@ -10,6 +10,8 @@ import { getProfile, FREE_DRIVER_LIMIT } from "@/lib/auth";
 // Rendered on demand (reads the auth cookie for FREE/PRO gating); the OpenF1
 // fetches underneath are still cached for an hour at the data-cache level.
 export const dynamic = "force-dynamic";
+// Give the (rare) cold OpenF1 aggregation room on serverless.
+export const maxDuration = 60;
 
 export default async function HomePage({
   searchParams,

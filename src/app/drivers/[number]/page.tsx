@@ -9,6 +9,7 @@ import { resolveSeason, seasonHref } from "@/lib/seasons";
 import { getProfile } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function generateMetadata({
   params,

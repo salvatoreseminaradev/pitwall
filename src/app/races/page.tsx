@@ -7,6 +7,7 @@ import { getProfile } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export const metadata: Metadata = {
   title: "Races — PitWall",

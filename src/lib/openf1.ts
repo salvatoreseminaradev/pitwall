@@ -33,7 +33,7 @@ export { CURRENT_SEASON };
  * - Retries with backoff on 429 (OpenF1 rate-limits request bursts).
  * - OpenF1 answers "no results" with a non-array body — we normalize to [].
  */
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 5;
 
 async function api<T>(path: string, attempt = 0): Promise<T[]> {
   const res = await fetch(`${BASE}${path}`, {
@@ -41,15 +41,15 @@ async function api<T>(path: string, attempt = 0): Promise<T[]> {
     headers: { Accept: "application/json" },
   });
 
-  // OpenF1 rate-limits bursts. Back off (honoring Retry-After when present),
-  // but fail fast enough that a rate-limit episode never hangs a page for long:
-  // the caller degrades to partial data and a reload — or the 30-min cache —
-  // fills the gap. Capped at ~4s per attempt, ~3 attempts.
+  // OpenF1 rate-limits bursts. Back off patiently (honoring Retry-After when
+  // present) so the aggregation completes rather than tripping the incomplete
+  // guard. Sequential fetching (concurrency 1) keeps bursts — and 429s — rare;
+  // the function's maxDuration gives these retries room to finish.
   if ((res.status === 429 || res.status >= 500) && attempt < MAX_RETRIES) {
     const retryAfter = Number(res.headers.get("retry-after"));
     const backoff = Number.isFinite(retryAfter) && retryAfter > 0
-      ? Math.min(retryAfter * 1000, 4000)
-      : Math.min(4000, 600 * 2 ** attempt);
+      ? Math.min(retryAfter * 1000, 6000)
+      : Math.min(6000, 700 * 2 ** attempt);
     await sleep(backoff + Math.random() * 300);
     return api<T>(path, attempt + 1);
   }
@@ -158,10 +158,12 @@ const loadSeason = async (year: number): Promise<SeasonData> => {
       ? tryFetch(getSessionResult(s.session_key))
       : Promise.resolve([]);
 
-  // Sequential, low-concurrency fetches keep us under OpenF1's rate limit.
-  const resultsPerRace = await mapLimit(raceSessions, 3, resultsFor);
-  const resultsPerSprint = await mapLimit(sprintSessions, 3, resultsFor);
-  const driverSamples = await mapLimit(sampleSessions, 3, (s) =>
+  // Low concurrency keeps us under OpenF1's rate limit (important on serverless,
+  // where cold invocations re-aggregate). This path mainly runs during the
+  // Supabase seed/cron refresh, which has a generous time budget.
+  const resultsPerRace = await mapLimit(raceSessions, 1, resultsFor);
+  const resultsPerSprint = await mapLimit(sprintSessions, 1, resultsFor);
+  const driverSamples = await mapLimit(sampleSessions, 1, (s) =>
     safe(getSessionDrivers(s.session_key)),
   );
 
